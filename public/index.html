@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Facebook Multi-Page Personal</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f7fb;color:#162033;font-family:Inter,system-ui,sans-serif}
+.wrap{max-width:1120px;margin:28px auto;padding:0 18px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:18px}
+h1{margin:0;font-size:27px}.sub,.small{font-size:13px;color:#687386}.card{background:#fff;border:1px solid #e2e7ef;border-radius:16px;padding:18px;box-shadow:0 5px 22px #1a2b400b;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:18px}.pages{max-height:360px;overflow:auto;border:1px solid #e0e5ed;border-radius:12px;padding:8px}
+.page{display:flex;align-items:center;gap:10px;padding:10px;border-radius:9px}.page:hover{background:#f5f7fa}.page input{width:auto}
+textarea,input[type=text],input[type=datetime-local]{width:100%;padding:12px;border:1px solid #d6dde7;border-radius:10px;font:inherit}textarea{min-height:180px;resize:vertical}
+button{border:0;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer;background:#1769e0;color:white}.secondary{background:#edf2f9;color:#20436e}.danger{background:#fff0f0;color:#a92d2d}
+.actions{display:flex;gap:10px;margin-top:14px}.actions button{flex:1}.badge{background:#fff;border:1px solid #dfe5ed;border-radius:999px;padding:8px 12px;font-size:13px}
+.job{border-top:1px solid #edf0f4;padding:12px 0}.job:first-child{border-top:0}.ok{color:#14753e}.err{color:#b32d2d}.scheduled{color:#986800}.running{color:#3158a4}
+@media(max-width:820px){.grid{grid-template-columns:1fr}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><h1>Facebook Multi-Page</h1><div class="sub">Đăng nhiều Fanpage — không cần nhập token</div></div>
+    <div class="badge" id="status">Chưa kết nối</div>
+  </div>
+
+  <div class="card">
+    <button onclick="login()">🔵 Mở Facebook / Đăng nhập</button>
+    <button class="secondary" onclick="loadPages()">↻ Tải danh sách Page</button>
+    <span class="small" id="hint">Đăng nhập trực tiếp trong cửa sổ Facebook do tool mở.</span>
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <h3>1. Chọn Fanpage</h3>
+      <div class="pages" id="pages"><div class="small">Chưa tải danh sách Page.</div></div>
+      <div style="margin-top:10px">
+        <button class="secondary" onclick="selectAll(true)">Chọn tất cả</button>
+        <button class="secondary" onclick="selectAll(false)">Bỏ chọn</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>2. Nội dung</h3>
+      <textarea id="message" placeholder="Nhập nội dung bài viết..."></textarea>
+      <label style="display:block;margin:12px 0 6px;font-weight:700">Ảnh / Video</label>
+      <input id="media" type="file" accept="image/*,video/*">
+      <div class="small" style="margin-top:6px">Chọn một ảnh hoặc một video cho bài.</div>
+
+      <label style="display:block;margin:12px 0 6px;font-weight:700">Thời gian</label>
+      <input id="runAt" type="datetime-local">
+
+      <div class="actions">
+        <button onclick="submitPost()">🚀 Đăng / Hẹn giờ</button>
+        <button class="secondary" onclick="clearForm()">Xóa</button>
+      </div>
+      <div id="result" style="margin-top:10px"></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h3>3. Lịch sử</h3>
+    <div id="jobs"><div class="small">Chưa có bài.</div></div>
+  </section>
+</div>
+
+<script>
+const $=x=>document.getElementById(x);
+function setStatus(t){$("status").textContent=t}
+async function login(){
+  setStatus("Đang mở Facebook...");
+  const r=await fetch("/api/login",{method:"POST"}); const d=await r.json();
+  setStatus(d.loggedIn?"✓ Facebook đã đăng nhập":"Facebook đang mở — hãy đăng nhập");
+}
+async function loadPages(){
+  $("pages").innerHTML='<div class="small">Đang đọc danh sách Page...</div>';
+  try{
+    const r=await fetch("/api/pages"), d=await r.json();
+    if(!r.ok) throw new Error(d.error);
+    if(!d.pages.length){$("pages").innerHTML='<div class="small">Không tìm thấy Page. Hãy kiểm tra tài khoản có quyền quản lý Page.</div>';return}
+    $("pages").innerHTML=d.pages.map((p,i)=>`
+      <label class="page"><input type="checkbox" class="pc" data-i="${i}"><span>${esc(p.name)}</span></label>`).join("");
+    window.pageData=d.pages;
+    setStatus(`✓ Tìm thấy ${d.pages.length} Page`);
+  }catch(e){$("pages").innerHTML='<div class="err">❌ '+esc(e.message)+'</div>'}
+}
+function selectAll(v){document.querySelectorAll(".pc").forEach(x=>x.checked=v)}
+async function submitPost(){
+  try{
+    const chosen=[...document.querySelectorAll(".pc:checked")].map(x=>window.pageData[Number(x.dataset.i)]);
+    if(!chosen.length) throw new Error("Chưa chọn Page.");
+    const f=new FormData(); f.append("pages",JSON.stringify(chosen)); f.append("message",$("message").value);
+    if($("media").files[0]) f.append("media",$("media").files[0]);
+    if($("runAt").value) f.append("runAt",new Date($("runAt").value).toISOString());
+    $("result").textContent="Đang tạo lịch...";
+    const r=await fetch("/api/post",{method:"POST",body:f}),d=await r.json();
+    if(!r.ok) throw new Error(d.error);
+    $("result").innerHTML="✅ Đã tạo bài/lịch.";
+    clearForm(false); loadJobs();
+  }catch(e){$("result").innerHTML='<span class="err">❌ '+esc(e.message)+'</span>'}
+}
+function clearForm(clear=true){$("message").value="";$("media").value="";if(clear)$("runAt").value=""}
+async function cancelJob(id){
+  if(!confirm("Hủy lịch này?"))return;
+  await fetch("/api/cancel/"+id,{method:"POST"});loadJobs();
+}
+function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+async function loadJobs(){
+  const r=await fetch("/api/jobs"),list=await r.json();
+  $("jobs").innerHTML=list.length?list.map(j=>`
+    <div class="job">
+      <b class="${esc(j.status)}">${esc(j.status)}</b> · ${new Date(j.createdAt).toLocaleString("vi-VN")}
+      <div class="small">Page: ${j.pages.map(p=>esc(p.name)).join(", ")}</div>
+      <div style="margin-top:4px">${esc((j.message||"(media)").slice(0,160))}</div>
+      <div class="small">Chạy: ${new Date(j.runAt).toLocaleString("vi-VN")}</div>
+      ${(j.results||[]).map(x=>`<div class="${x.ok?"ok":"err"}">${x.ok?"✓":"✗"} ${esc(x.page)}${x.error?": "+esc(x.error):""}</div>`).join("")}
+      ${["scheduled","queued"].includes(j.status)?`<button class="danger" style="margin-top:7px;padding:7px 10px" onclick="cancelJob('${j.id}')">Hủy</button>`:""}
+    </div>`).join(""):'<div class="small">Chưa có bài.</div>';
+}
+loadJobs();setInterval(loadJobs,5000);
+</script>
+</body>
+</html>

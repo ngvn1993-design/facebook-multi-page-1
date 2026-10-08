@@ -1,0 +1,58 @@
+{
+  "name": "facebook-multi-page-personal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Personal multi-Facebook-Page posting tool using a persistent browser session.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win nsis",
+    "postinstall": "node scripts/prepare-browser.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "multer": "^2.0.2",
+    "playwright": "^1.55.0"
+  },
+  "devDependencies": {
+    "electron": "^38.2.2",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.nghia.facebookmultipage",
+    "productName": "Facebook Multi-Page",
+    "files": [
+      "**/*"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Facebook-Multi-Page-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Facebook Multi-Page"
+    },
+    "asarUnpack": [
+      "playwright-browsers/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "playwright-browsers",
+        "to": "playwright-browsers"
+      }
+    ]
+  }
+}

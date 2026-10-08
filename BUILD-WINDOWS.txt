@@ -1,0 +1,10 @@
+BẢN CÀI WINDOWS
+
+Trên một máy Windows có Node.js 20+:
+1. Mở thư mục này.
+2. Chạy: npm install
+3. Chạy: npm run dist:win
+4. File cài đặt nằm trong thư mục dist, tên dạng Facebook-Multi-Page-Setup-1.0.0.exe.
+
+Sau khi cài, người dùng chỉ cần mở Facebook Multi-Page từ Desktop/Start Menu.
+Ứng dụng không yêu cầu nhập Page Access Token. Người dùng đăng nhập Facebook trực tiếp trong trình duyệt của app.
